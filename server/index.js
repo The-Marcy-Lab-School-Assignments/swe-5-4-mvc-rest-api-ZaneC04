@@ -70,12 +70,13 @@ app.get("/api/todos/:id", serveSingleTodo)
 // Error: 400 if task is missing from the request body
 
 const createTodo = (req, res, next) => {
-  const { task } = req.body.task
+  const task = req.body.task
   if (!task) {
     res.status(400).send({Error: "Invalid task description"})
     return;
   }
   const newTask = {id: getId(), task: task, isDone: false}
+  todos.push(newTask)
   res.status(201).send(newTask);
 }
 
@@ -87,7 +88,7 @@ app.post('/api/todos', createTodo)
 // Error: 404 if no todo with that id
 
 const updateTodo = (req, res, next) => {
-  const id = req.params
+  const id = req.params.id
   const isDone = req.body.isDone
   const todo = todos.find(todo => todo.id === Number(id))
   if (!todo) {
@@ -96,16 +97,6 @@ const updateTodo = (req, res, next) => {
   }
   todo.isDone = isDone
   res.status(200).send(todo)
-  // const isDone = req.body.isDone;
-  // const id = req.params.id;
-  // const todo = todos.find((todo) => todo.id === Number(id));
-  // if (!todo) {
-  //   res.status(404).send(`ID not found`);
-  //   return;
-  // }
-  
-  // todo.isDone = isDone;
-  // res.send(todo);
 }
 
 app.patch("/api/todos/:id", updateTodo)
@@ -114,10 +105,27 @@ app.patch("/api/todos/:id", updateTodo)
 // Response: 204, no content
 // Error: 404 if no todo with that id
 
+const deleteTodo = (req, res, next) => {
+  const id = req.params.id
+  const todoIndex = todos.findIndex(todo => todo.id === Number(id))
+  if (todoIndex === -1) {
+    res.status(404).send({Error: 'task not found'})
+    return;
+  }
+  todos.splice(todoIndex, 1)
+  res.sendStatus(204)
+}
+
+app.delete('/api/todos/:id', deleteTodo)
 
 // TODO: Catch-all handler — send a 404 JSON error for unmatched /api routes,
 // or serve index.html for all other routes (SPA fallback)
 
+const serve404 = (req, res, next) => {
+  res.status(404).send({ error: `Not found: ${req.originalUrl}` });
+};
+
+app.use(serve404)
 
 const port = 8080;
 app.listen(port, () => console.log(`Listening at http://localhost:${port}`));
