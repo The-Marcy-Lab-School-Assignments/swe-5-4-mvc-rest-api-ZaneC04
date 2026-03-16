@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const todoControllers = require("./controllers/todoControllers.js")
 
 const app = express();
 const pathToFrontend = path.join(__dirname, '../frontend');
@@ -18,106 +19,6 @@ app.use(logRoutes);
 app.use(express.static(pathToFrontend));
 app.use(express.json());
 
-////////////////////////
-// In-Memory Database
-////////////////////////
-
-
-// Increments and returns a unique id each time it is called.
-let id = 1;
-const getId = () => id++;
-
-// Seed data — do not remove
-const todos = [
-  { id: getId(), task: 'Buy groceries', isDone: false },
-  { id: getId(), task: 'Walk the dog', isDone: true },
-  { id: getId(), task: 'Read a book', isDone: false },
-];
-
-////////////////////////
-// Endpoints
-////////////////////////
-
-// TODO: GET /api/todos
-// Response: 200, array of all todos
-
-
-const serveTodos = (req, res, next) => {
-  res.status(200).send(todos)
-}
-
-app.get("/api/todos", serveTodos)
-
-// TODO: GET /api/todos/:id
-// Response: 200, single todo object
-// Error: 404 if no todo with that id
-
-const serveSingleTodo = (req, res, next) => {
-  const { id } = req.params
-  const todo = todos.find(todo => todo.id === Number(id))
-  if (!todo) {
-    res.status(404).send({Error: `no todo with the id ${id}`})
-    return;
-  }
-  res.status(200).send(todo)
-}
-
-app.get("/api/todos/:id", serveSingleTodo)
-
-// TODO: POST /api/todos
-// Request body: { task }
-// Response: 201, the newly created todo object
-// Error: 400 if task is missing from the request body
-
-const createTodo = (req, res, next) => {
-  const task = req.body.task
-  if (!task) {
-    res.status(400).send({Error: "Invalid task description"})
-    return;
-  }
-  const newTask = {id: getId(), task: task, isDone: false}
-  todos.push(newTask)
-  res.status(201).send(newTask);
-}
-
-app.post('/api/todos', createTodo)
-
-// TODO: PATCH /api/todos/:id
-// Request body: { isDone }
-// Response: 200, the updated todo object
-// Error: 404 if no todo with that id
-
-const updateTodo = (req, res, next) => {
-  const id = req.params.id
-  const isDone = req.body.isDone
-  const todo = todos.find(todo => todo.id === Number(id))
-  if (!todo) {
-    res.status(404).send({Error: 'task not found'})
-    return;
-  }
-  todo.isDone = isDone
-  res.status(200).send(todo)
-}
-
-app.patch("/api/todos/:id", updateTodo)
-
-// TODO: DELETE /api/todos/:id
-// Response: 204, no content
-// Error: 404 if no todo with that id
-
-const deleteTodo = (req, res, next) => {
-  const id = req.params.id
-  const todoIndex = todos.findIndex(todo => todo.id === Number(id))
-  if (todoIndex === -1) {
-    res.status(404).send({Error: 'task not found'})
-    return;
-  }
-  todos.splice(todoIndex, 1)
-  res.sendStatus(204)
-}
-
-app.delete('/api/todos/:id', deleteTodo)
-
 // TODO: Catch-all handler — send a 404 JSON error for unmatched /api routes,
 // or serve index.html for all other routes (SPA fallback)
 
@@ -125,6 +26,11 @@ const serve404 = (req, res, next) => {
   res.status(404).send({ error: `Not found: ${req.originalUrl}` });
 };
 
+app.get("/api/todos", todoControllers.listTodos)
+app.get("/api/todos/:id", todoControllers.findTodo)
+app.post('/api/todos', todoControllers.createTodo)
+app.patch("/api/todos/:id", todoControllers.updateTodo)
+app.delete('/api/todos/:id', todoControllers.deleteTodo)
 app.use(serve404)
 
 const port = 8080;
